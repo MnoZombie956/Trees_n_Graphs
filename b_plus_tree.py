@@ -285,30 +285,5 @@ class B_plus_tree:
                         key.parent = node_parent
 
 
-# Print the tree
-
-
-order = int(3)
-bpt = B_plus_tree(order)
-
-bpt.insert(value='1', key='1')
-bpt.insert('3', '3')
-bpt.insert('5', '5')
-bpt.insert('7', '7')
-bpt.insert('9', '9')
-bpt.insert('3', '3')
-# bpt.insert('2', '17')
-# bpt.insert('6', '18')
-# bpt.insert('8', '19')
-
-bpt.print_b_plus()
-
-if(bpt.exists('10', '8')):
-    print("Found")
-else:
-    print("Not found")
-			
-
-
 
 
