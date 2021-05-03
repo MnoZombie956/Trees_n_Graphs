@@ -245,5 +245,3 @@ class B_plus_tree:
                 if not parentB_plus_node.is_leaf:
                     for j in parentB_plus_node.keys:
                         j.parent = parentB_plus_node
-
-
