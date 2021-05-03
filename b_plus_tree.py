@@ -1,36 +1,6 @@
 import math
+from b_plus_node import B_plus_node
 
-class B_plus_node:
-    def __init__(self, order):
-        self.order = order
-        self.values = []
-        self.keys = []
-        self.next_key = None
-        self.parent = None
-        self.is_leaf = False
-        self.min_keys = int(math.ceil(self.order / 2)) - 1
-
-    def insert(self, leaf, value, key):
-        if (self.values):
-            temp1 = self.values
-            for i in range(len(temp1)):
-                if (value == temp1[i]):
-                    self.keys[i].append(key)
-                    break
-                elif (value < temp1[i]):
-                    self.values.insert(i,value)
-                    self.keys.insert(i,[key])
-                    break
-                elif (i + 1 == len(temp1)):
-                    self.values.append(value)
-                    self.keys.append([key])
-                    break
-        else:
-            self.values = [value]
-            self.keys = [[key]]
-
-
-# B plus tree
 class B_plus_tree:
     def __init__(self, order):
         self.root = B_plus_node(order)
@@ -41,16 +11,31 @@ class B_plus_tree:
             start_node = self.root
 
         if start_node.is_leaf == False:
-            print(f"{current_depth:3d}",tab,start_node.values)
+            print(f"{current_depth:3d}",tab,start_node.values,"n_children: ",len(start_node.keys))  
             for key in start_node.keys:
                 self.print_b_plus(tab+"|    ",key, current_depth+1)
-            return True
+            return
         if start_node.values:
             print(f"{current_depth:3d}",tab,start_node.values)
- 
-    # true if value and key exists in tree
-    def exists(self, value:str, key:"B_plus_node"):
-        node = self.search_node(value)
+
+    def get_node(self, value):
+        current_node = self.root
+        while(current_node.is_leaf == False):
+            temp2 = current_node.values
+            for i in range(len(temp2)):
+                if (value == temp2[i]):
+                    current_node = current_node.keys[i + 1]
+                    break
+                elif (value < temp2[i]):
+                    current_node = current_node.keys[i]
+                    break
+                elif (i + 1 == len(current_node.values)):
+                    current_node = current_node.keys[i + 1]
+                    break
+        return current_node
+
+    def search(self, value, key):
+        node = self.get_node(value)
         for i, item in enumerate(node.values):
             if item == value:
                 if key in node.keys[i]:
@@ -59,231 +44,206 @@ class B_plus_tree:
                     return False
         return False
 
-    # return node from value
-    def search_node(self, value):
-        actual = self.root
-        while(actual.is_leaf == False):
-            values = actual.values
-            for i in range(len(values)):
-                if (value == values[i]):
-                    actual = actual.keys[i + 1]
-                    break
-                elif (value < values[i]):
-                    actual = actual.keys[i]
-                    break
-                elif (i + 1 == len(actual.values)):
-                    actual = actual.keys[i + 1]
-                    break
-        return actual
-
-    def insert_util(self, node, value, node_at):
-        if (self.root == node):
-            self.root = B_plus_node(node.order)
-            self.root.keys = [node, node_at]
-            self.root.values = [value]
-
-            node.parent = self.root
-            node_at.parent = self.root
-            return True
-            
-        node_parent = node.parent
-        for i in range(len(node_parent.keys)):
-            if (node_parent.keys[i] == node):
-                node_parent.values.insert(i,value)
-                node_parent.keys.insert(i+1,node_at)
-
-                if (len(node_parent.keys) > node_parent.order):
-                    flash_node_parent = B_plus_node(node_parent.order)
-                    flash_node_parent.parent = node_parent.parent
-
-                    mid = node_parent.min_keys
-
-                    flash_node_parent.values = node_parent.values[mid + 1:]
-                    flash_node_parent.keys = node_parent.keys[mid + 1:]
-
-                    parent_mid_value = node_parent.values[mid]
-
-                    if (mid == 0):
-                        node_parent.values = node_parent.values[:mid + 1]
-                    else:
-                        node_parent.values = node_parent.values[:mid]
-
-                    node_parent.keys = node_parent.keys[:mid + 1]
-
-                    for key in node_parent.keys:
-                        key.parent = node_parent
-                    for k in flash_node_parent.keys:
-                        k.parent = flash_node_parent
-                    self.insert_util(node_parent, parent_mid_value, flash_node_parent)
-
     def insert(self, value, key):
         value = str(value)
-        actual = self.search_node(value)
-        actual.insert(actual, value, key)
+        old_node = self.get_node(value)
+        old_node.leaf_insert(old_node, value, key)
 
-        if (len(actual.values) == actual.order): # violation found, rearange
-            node = B_plus_node(actual.order)
-            
-            node.is_leaf = True
-            node.parent = actual.parent
-            
-            mid = actual.min_keys
-            
-            node.values = actual.values[mid + 1:]
-            node.keys = actual.keys[mid + 1:]
-            node.next_key = actual.next_key
+        if (len(old_node.values) == old_node.order):
+            node1 = B_plus_node(old_node.order)
+            node1.is_leaf = True
+            node1.parent = old_node.parent
+            mid = int(math.ceil(old_node.order / 2)) - 1
+            node1.values = old_node.values[mid + 1:]
+            node1.keys = old_node.keys[mid + 1:]
+            node1.next_key = old_node.next_key
+            old_node.values = old_node.values[:mid + 1]
+            old_node.keys = old_node.keys[:mid + 1]
+            old_node.next_key = node1
+            self.insert_util(old_node, node1.values[0], node1)
 
-            actual.values = actual.values[:mid + 1]
-            actual.keys = actual.keys[:mid + 1]
+    def insert_util(self, n, value, ndash):
+        if (self.root == n):
+            rootB_plus_node = B_plus_node(n.order)
+            rootB_plus_node.values = [value]
+            rootB_plus_node.keys = [n, ndash]
+            self.root = rootB_plus_node
+            n.parent = rootB_plus_node
+            ndash.parent = rootB_plus_node
+            return
 
-            actual.next_key = node
-            self.insert_util(actual, node.values[0], node) # rearange function
+        parentB_plus_node = n.parent
+        flash3 = parentB_plus_node.keys
+        for i in range(len(flash3)):
+            if (flash3[i] == n):
+                parentB_plus_node.values = parentB_plus_node.values[:i] + \
+                    [value] + parentB_plus_node.values[i:]
+                parentB_plus_node.keys = parentB_plus_node.keys[:i +
+                                                  1] + [ndash] + parentB_plus_node.keys[i + 1:]
+                if (len(parentB_plus_node.keys) > parentB_plus_node.order):
+                    parentdash = B_plus_node(parentB_plus_node.order)
+                    parentdash.parent = parentB_plus_node.parent
+                    mid = int(math.ceil(parentB_plus_node.order / 2)) - 1
+                    parentdash.values = parentB_plus_node.values[mid + 1:]
+                    parentdash.keys = parentB_plus_node.keys[mid + 1:]
+                    value_ = parentB_plus_node.values[mid]
+                    if (mid == 0):
+                        parentB_plus_node.values = parentB_plus_node.values[:mid + 1]
+                    else:
+                        parentB_plus_node.values = parentB_plus_node.values[:mid]
+                    parentB_plus_node.keys = parentB_plus_node.keys[:mid + 1]
+                    for j in parentB_plus_node.keys:
+                        j.parent = parentB_plus_node
+                    for j in parentdash.keys:
+                        j.parent = parentdash
+                    self.insert_util(parentB_plus_node, value_, parentdash)
 
     def delete(self, value, key):
-        node = self.search_node(value)
-        found = False
-        for i, item in enumerate(node.values):
+        node_ = self.get_node(value)
+
+        temp = 0
+        for i, item in enumerate(node_.values):
             if item == value:
-                found = True
+                temp = 1
 
-                if key in node.keys[i]:
-                    if len(node.keys[i]) > 1:
-                        node.keys[i].pop(node.keys[i].index(key))
-                    elif node == self.root:
-                        node.values.pop(i)
-                        node.keys.pop(i)
+                if key in node_.keys[i]:
+                    if len(node_.keys[i]) > 1:
+                        node_.keys[i].pop(node_.keys[i].index(key))
+                    elif node_ == self.root:
+                        node_.values.pop(i)
+                        node_.keys.pop(i)
                     else:
-                        node.keys[i].pop(node.keys[i].index(key))
-                        del node.keys[i]
-                        node.values.pop(node.values.index(value))
-                        self.delete_util(node, value, key)
+                        node_.keys[i].pop(node_.keys[i].index(key))
+                        del node_.keys[i]
+                        node_.values.pop(node_.values.index(value))
+                        self.delete_util(node_, value, key)
                 else:
-                    print("Non-existent value")
-                    return False
-        if found == False:
-            print("Non-existent value")
-            return False
+                    print("Value has no compatible key")
+                    return
+        if temp == 0:
+            print("Tree with no such value")
+            return
 
-    def delete_util(self, node, value, key):
-        if not node.is_leaf:
-            for i, key in enumerate(node.keys):
-                if key == key:
-                    node.keys.pop(i)
+    def delete_util(self, node_, value, key):
+
+        if not node_.is_leaf:
+            for i, item in enumerate(node_.keys):
+                if item == key:
+                    node_.keys.pop(i)
                     break
-            for i, value2 in enumerate(node.values):
-                if value2 == value:
-                    node.values.pop(i)
+            for i, item in enumerate(node_.values):
+                if item == value:
+                    node_.values.pop(i)
                     break
 
-        if self.root == node and len(node.keys) == 1:
-            self.root = node.keys[0]
-            node.keys[0].parent = None
-            del node
-            return True
-        elif (len(node.keys) < node.min_keys + 1 and node.is_leaf == False) \
-            or (len(node.values) < int(math.ceil((node.order - 1) / 2)) and node.is_leaf == True):
+        if self.root == node_ and len(node_.keys) == 1:
+            self.root = node_.keys[0]
+            node_.keys[0].parent = None
+            del node_
+            return
+        elif (len(node_.keys) < int(math.ceil(node_.order / 2)) and node_.is_leaf == False) or (len(node_.values) < int(math.ceil((node_.order - 1) / 2)) and node_.is_leaf == True):
 
-            is_predecessor = False
-            node_parent = node.parent
-            previous_node = -1
-            next_node = -1
-            pre_key = -1 
-            pos_key = -1
-            for i, key in enumerate(node_parent.keys):
-                if key == node:
+            is_predecessor = 0
+            parentB_plus_node = node_.parent
+            PrevB_plus_node = -1
+            NextB_plus_node = -1
+            PrevK = -1
+            PostK = -1
+            for i, item in enumerate(parentB_plus_node.keys):
+
+                if item == node_:
                     if i > 0:
-                        previous_node = node_parent.keys[i - 1]
-                        pre_key = node_parent.values[i - 1]
-                    if i < len(node_parent.keys) - 1:
-                        next_node = node_parent.keys[i + 1]
-                        pos_key = node_parent.values[i]
+                        PrevB_plus_node = parentB_plus_node.keys[i - 1]
+                        PrevK = parentB_plus_node.values[i - 1]
 
-            if previous_node == -1:
-                actual_node = next_node
-                actual_value = pos_key
-            elif next_node == -1:
-                is_predecessor = True
-                actual_node = previous_node
-                actual_value = pre_key
+                    if i < len(parentB_plus_node.keys) - 1:
+                        NextB_plus_node = parentB_plus_node.keys[i + 1]
+                        PostK = parentB_plus_node.values[i]
+
+            if PrevB_plus_node == -1:
+                ndash = NextB_plus_node
+                value_ = PostK
+            elif NextB_plus_node == -1:
+                is_predecessor = 1
+                ndash = PrevB_plus_node
+                value_ = PrevK
             else:
-                if len(node.values) + len(next_node.values) < node.order:
-                    actual_node = next_node
-                    actual_value = pos_key
+                if len(node_.values) + len(NextB_plus_node.values) < node_.order:
+                    ndash = NextB_plus_node
+                    value_ = PostK
                 else:
-                    is_predecessor = True
-                    actual_node = previous_node
-                    actual_value = pre_key
+                    is_predecessor = 1
+                    ndash = PrevB_plus_node
+                    value_ = PrevK
 
-            if len(node.values) + len(actual_node.values) < node.order:
-                if is_predecessor == False:
-                    node, actual_node = actual_node, node
-                actual_node.keys += node.keys
-                if not node.is_leaf:
-                    actual_node.values.append(actual_value)
+            if len(node_.values) + len(ndash.values) < node_.order:
+                if is_predecessor == 0:
+                    node_, ndash = ndash, node_
+                ndash.keys += node_.keys
+                if not node_.is_leaf:
+                    ndash.values.append(value_)
                 else:
-                    actual_node.next_key = node.next_key
-                actual_node.values += node.values
+                    ndash.next_key = node_.next_key
+                ndash.values += node_.values
 
-                if not actual_node.is_leaf:
-                    for key in actual_node.keys:
-                        key.parent = actual_node
+                if not ndash.is_leaf:
+                    for j in ndash.keys:
+                        j.parent = ndash
 
-                self.delete_util(node.parent, actual_value, node)
-                del node
+                self.delete_util(node_.parent, value_, node_)
+                del node_
             else:
-                if is_predecessor == True:
-                    if not node.is_leaf:
-                        actual_node_lastK = actual_node.keys.pop(-1)
-                        actual_node_lastV = actual_node.values.pop(-1)
-                        node.keys = [actual_node_lastK] + node.keys
-                        node.values = [actual_value] + node.values
-                        node_parent = node.parent
-                        for i, value in enumerate(node_parent.values):
-                            if value == actual_value:
-                                parent.values[i] = actual_node_lastV
+                if is_predecessor == 1:
+                    if not node_.is_leaf:
+                        ndashpm = ndash.keys.pop(-1)
+                        ndashkm_1 = ndash.values.pop(-1)
+                        node_.keys = [ndashpm] + node_.keys
+                        node_.values = [value_] + node_.values
+                        parentB_plus_node = node_.parent
+                        for i, item in enumerate(parentB_plus_node.values):
+                            if item == value_:
+                                p.values[i] = ndashkm_1
                                 break
                     else:
-                        actual_node_lastK = actual_node.keys.pop(-1)
-                        actual_node_lastV = actual_node.values.pop(-1)
-                        node.keys = [actual_node_lastK] + node.keys
-                        node.values = [actual_node_lastV] + node.values
-                        node_parent = node.parent
-                        for i, value in enumerate(parent.values):
-                            if value == actual_value:
-                                node_parent.values[i] = actual_node_lastV
+                        ndashpm = ndash.keys.pop(-1)
+                        ndashkm = ndash.values.pop(-1)
+                        node_.keys = [ndashpm] + node_.keys
+                        node_.values = [ndashkm] + node_.values
+                        parentB_plus_node = node_.parent
+                        for i, item in enumerate(p.values):
+                            if item == value_:
+                                parentB_plus_node.values[i] = ndashkm
                                 break
                 else:
-                    if not node.is_leaf:
-                        actual_node_lastK = actual_node.keys.pop(0)
-                        actual_node_lastV = actual_node.values.pop(0)
-                        node.keys = node.keys + [actual_node_lastK]
-                        node.values = node.values + [actual_value]
-                        node_parent = node.parent
-                        for i, value in enumerate(node_parent.values):
-                            if value == actual_value:
-                                node_parent.values[i] = actual_node_lastV
+                    if not node_.is_leaf:
+                        ndashp0 = ndash.keys.pop(0)
+                        ndashk0 = ndash.values.pop(0)
+                        node_.keys = node_.keys + [ndashp0]
+                        node_.values = node_.values + [value_]
+                        parentB_plus_node = node_.parent
+                        for i, item in enumerate(parentB_plus_node.values):
+                            if item == value_:
+                                parentB_plus_node.values[i] = ndashk0
                                 break
                     else:
-                        actual_node_lastK = actual_node.keys.pop(0)
-                        actual_node_lastV = actual_node.values.pop(0)
-                        node.keys = node.keys + [actual_node_lastK]
-                        node.values = node.values + [actual_node_lastV]
-                        node_parent = node.parent
-                        for i, value in enumerate(node_parent.values):
-                            if value == actual_value:
-                                node_parent.values[i] = actual_node.values[0]
+                        ndashp0 = ndash.keys.pop(0)
+                        ndashk0 = ndash.values.pop(0)
+                        node_.keys = node_.keys + [ndashp0]
+                        node_.values = node_.values + [ndashk0]
+                        parentB_plus_node = node_.parent
+                        for i, item in enumerate(parentB_plus_node.values):
+                            if item == value_:
+                                parentB_plus_node.values[i] = ndash.values[0]
                                 break
 
-                if not actual_node.is_leaf:
-                    for key in actual_node.keys:
-                        key.parent = actual_node
-                if not node.is_leaf:
-                    for key in node.keys:
-                        key.parent = node
-                if not node_parent.is_leaf:
-                    for key in node_parent.keys:
-                        key.parent = node_parent
-
-
+                if not ndash.is_leaf:
+                    for j in ndash.keys:
+                        j.parent = ndash
+                if not node_.is_leaf:
+                    for j in node_.keys:
+                        j.parent = node_
+                if not parentB_plus_node.is_leaf:
+                    for j in parentB_plus_node.keys:
+                        j.parent = parentB_plus_node
 
 

@@ -204,7 +204,7 @@ class Node_B(object):
 class B_tree(object):
     def __init__(self, order):
         if order <= 2:
-            raise ValueError("B_tree order must be at least 3") # look it up
+            raise ValueError("B_tree order must be at least 3")
         self.root = Node_B()
         self.order = order
         self.max_values = order - 1

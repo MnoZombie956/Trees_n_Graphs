@@ -11,13 +11,13 @@ class AVL_tree(Tree):
         print(tab,start.key)
 
         if start.left:
-            self.print_avl(tab+"    ", start.left)
+            self.print_avl(tab+"|    ", start.left)
         else:
-            print(tab+"    None")
+            print(tab+"|    None")
         if start.right:
-            self.print_avl(tab+"    ", start.right)
+            self.print_avl(tab+"|    ", start.right)
         else:
-            print(tab+"    None")
+            print(tab+"|    None")
 
     def left_rotation(self, raiz_sub_arvore):
         nova_raiz_sub_arvore = raiz_sub_arvore.right
