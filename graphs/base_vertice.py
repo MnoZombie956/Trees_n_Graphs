@@ -10,4 +10,7 @@ class Vertice:
 		return self.valor
 
 	def __str__(self):
-		return f"v_value:{self.valor} len_adj: {len(self.adjacencias)}"
+		return f"{self.valor} len(adj)={len(self.adjacencias)}"
+
+	def __repr__(self):
+		return str(self)
