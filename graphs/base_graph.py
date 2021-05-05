@@ -22,10 +22,23 @@ class Graph:
 			return self.vertices[valor_vertice]
 		else:
 			return None
-	def print(self, value, tab="", visited=[]):
-		v = self.obtem_vertice(value)
-		print(tab,v.valor)
-		for adj in v.adjacencias:
-			#if adj not in visited: # in case there is cycles
-				#visited.append(adj)
-			self.print(adj.valor,tab+"|    ", visited)
+			
+	def print(self, start_vertice=None, tab="", visited=[], parent = None):
+		for value in self.vertices:
+			if start_vertice:
+				value = start_vertice.valor
+			weight = 0
+			if parent:
+				weight = parent.adjacencias[start_vertice]
+
+			vertice = self.obtem_vertice(value)
+			print(tab,f"-{weight}-",vertice.valor)
+			for adj in vertice.adjacencias:
+				if adj not in visited: # in case there is cycles
+					visited.append(adj)
+					self.print(adj, tab+"|    ", visited, vertice)
+				else:
+					print(tab,f"-{vertice.adjacencias[adj]}-",vertice.valor,"->",adj.valor)
+
+			if start_vertice:
+				return
